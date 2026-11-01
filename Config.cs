@@ -32,6 +32,7 @@ namespace CustomISLC
         public bool AutoBoostForeground { get; set; }
         public bool MmcssGpuOptimization { get; set; }
         public bool UltimatePowerPlan { get; set; }
+        public string Language { get; set; }
 
         public AppConfig()
         {
@@ -57,6 +58,7 @@ namespace CustomISLC
             AutoBoostForeground = true;
             MmcssGpuOptimization = true;
             UltimatePowerPlan = false;
+            Language = "en";
         }
 
         private static string ConfigPath
@@ -77,6 +79,8 @@ namespace CustomISLC
                     {
                         if (loaded.ExclusionList == null)
                             loaded.ExclusionList = new List<string>();
+                        if (string.IsNullOrEmpty(loaded.Language))
+                            loaded.Language = "en";
                         return loaded;
                     }
                 }
@@ -129,7 +133,8 @@ namespace CustomISLC
                 sb.AppendFormat("  \"FlushModifiedBeforePurge\": {0},\r\n", FlushModifiedBeforePurge ? "true" : "false");
                 sb.AppendFormat("  \"AutoBoostForeground\": {0},\r\n", AutoBoostForeground ? "true" : "false");
                 sb.AppendFormat("  \"MmcssGpuOptimization\": {0},\r\n", MmcssGpuOptimization ? "true" : "false");
-                sb.AppendFormat("  \"UltimatePowerPlan\": {0}\r\n", UltimatePowerPlan ? "true" : "false");
+                sb.AppendFormat("  \"UltimatePowerPlan\": {0},\r\n", UltimatePowerPlan ? "true" : "false");
+                sb.AppendFormat("  \"Language\": \"{0}\"\r\n", Escape(Language ?? "en"));
                 sb.Append("}");
 
                 File.WriteAllText(ConfigPath, sb.ToString(), new UTF8Encoding(false));

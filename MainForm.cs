@@ -21,17 +21,28 @@ namespace CustomISLC
 
         // Painel 1: Estatísticas de Memória
         private Panel _cardMemory;
+        private Label _lblMemTitle;
+        private Label _lblTotalMemCap;
         private Label _lblTotalMemValue;
+        private Label _lblStandbyMemCap;
         private Label _lblStandbyMemValue;
         private Label _lblStandbySubDetail;
+        private Label _lblFreeMemCap;
         private Label _lblFreeMemValue;
+        private Label _lblModifiedMemCap;
         private Label _lblModifiedMemValue;
+        private Label _lblPurgeCountCap;
         private Label _lblPurgeCountValue;
         private Label _lblStatusBadge;
         private MemoryBarControl _memoryBar;
 
         // Painel 2: Regras de Limpeza Automática
         private Panel _cardConfig;
+        private Label _lblRulesTitle;
+        private Label _lblStandbyLimit;
+        private Label _lblCondition;
+        private Label _lblFreeMemLimit;
+        private Label _lblPollingRate;
         private NumericUpDown _numStandbyLimit;
         private NumericUpDown _numFreeMemLimit;
         private ComboBox _cmbCondition;
@@ -39,13 +50,18 @@ namespace CustomISLC
 
         // Painel 3: Resolução do Timer do Windows
         private Panel _cardTimer;
+        private Label _lblTimerTitle;
+        private Label _lblCurrentTimerCap;
         private Label _lblCurrentTimerVal;
+        private Label _lblMinMaxTimerCap;
         private Label _lblMinMaxTimerVal;
         private CheckBox _chkCustomTimer;
+        private Label _lblWantedTimerCap;
         private NumericUpDown _numWantedTimer;
 
-        // Painel 4 (NOVO): Otimização de Entrega de Imagem & Frametime
+        // Painel 4: Otimização de Entrega de Imagem & Frametime
         private Panel _cardFrameOpt;
+        private Label _lblFrameOptTitle;
         private CheckBox _chkSmartLowPrioPurge;
         private CheckBox _chkFlushModified;
         private CheckBox _chkAutoBoostFg;
@@ -56,6 +72,8 @@ namespace CustomISLC
 
         // Painel 5: Opções Gerais & Atalho Global
         private Panel _cardOptions;
+        private Label _lblOptionsTitle;
+        private ComboBox _cmbLanguage;
         private CheckBox _chkStartMinimized;
         private CheckBox _chkAutoStartMonitoring;
         private CheckBox _chkMinimizeOnClose;
@@ -68,6 +86,7 @@ namespace CustomISLC
 
         // Painel 6: Working Set & Lista de Exclusão de Processos
         private Panel _cardExclusions;
+        private Label _lblExclusionsTitle;
         private CheckBox _chkPurgeWorkingSetAuto;
         private ListBox _lstExclusions;
         private TextBox _txtExclusionProc;
@@ -82,7 +101,11 @@ namespace CustomISLC
         // System Tray
         private NotifyIcon _trayIcon;
         private ContextMenuStrip _trayMenu;
+        private ToolStripMenuItem _trayItemOpen;
         private ToolStripMenuItem _trayItemToggle;
+        private ToolStripMenuItem _trayItemPurgeStandby;
+        private ToolStripMenuItem _trayItemPurgeWS;
+        private ToolStripMenuItem _trayItemExit;
         private Icon _appIcon;
         private bool _suppressEvents = false;
 
@@ -90,9 +113,11 @@ namespace CustomISLC
         {
             _config = AppConfig.Load();
             ApplyCommandLineOverrides(args);
+            Localization.SetLanguage(_config.Language);
 
             InitializeComponent();
             LoadConfigToUI();
+            ApplyLocalization();
             ApplyTheme(_config.DarkMode);
             RegisterConfiguredHotkey();
 
@@ -111,7 +136,7 @@ namespace CustomISLC
                 NativeMethods.SetHighPerformancePowerPlan(true);
             }
 
-            _lblActivePowerPlanVal.Text = "Plano Ativo: " + NativeMethods.GetActivePowerPlanName();
+            _lblActivePowerPlanVal.Text = Localization.Get("ActivePlanPrefix") + NativeMethods.GetActivePowerPlanName();
 
             UpdateMemoryStats(false);
 
@@ -149,6 +174,10 @@ namespace CustomISLC
                 else if (arg == "-freememory" && i + 1 < args.Length)
                 {
                     _config.FreeMemoryValue = args[++i];
+                }
+                else if (arg == "-lang" && i + 1 < args.Length)
+                {
+                    _config.Language = args[++i];
                 }
             }
         }
@@ -192,7 +221,7 @@ namespace CustomISLC
         private void InitializeComponent()
         {
             bool isAdmin = IsRunningAsAdmin();
-            Text = "Custom ISLC Pro - Otimizador de Memória, GPU & Entrega de Quadros" + (isAdmin ? " [Administrador]" : " [Sem Privilégio Admin]");
+            Text = Localization.Get("AppTitle") + (isAdmin ? Localization.Get("AdminSuffix") : Localization.Get("NoAdminSuffix"));
             Size = new Size(830, 745);
             MinimumSize = new Size(830, 745);
             MaximumSize = new Size(830, 745);
@@ -209,10 +238,10 @@ namespace CustomISLC
             // PAINEL 1: MONITORAMENTO DE MEMÓRIA
             // =====================================================================
             _cardMemory = CreateCard(16, 12, 782, 165);
-            Label lblMemTitle = CreateSectionTitle("STATUS DA MEMÓRIA DO SISTEMA EM TEMPO REAL", 14, 10);
+            _lblMemTitle = CreateSectionTitle(Localization.Get("SectionMemoryTitle"), 14, 10);
             _lblStatusBadge = new Label
             {
-                Text = "● PARADO",
+                Text = Localization.Get("StatusStopped"),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(248, 113, 113),
                 AutoSize = true,
@@ -225,13 +254,13 @@ namespace CustomISLC
                 Size = new Size(754, 26)
             };
 
-            _lblTotalMemValue = CreateMetricBox(_cardMemory, "Memória Total", "0 MB", 14, 72, Color.FromArgb(148, 163, 184), null);
-            _lblStandbyMemValue = CreateMetricBox(_cardMemory, "Standby List (Cache)", "0 MB", 168, 72, Color.FromArgb(56, 189, 248), out _lblStandbySubDetail);
-            _lblFreeMemValue = CreateMetricBox(_cardMemory, "Memória Livre", "0 MB", 322, 72, Color.FromArgb(74, 222, 128), null);
-            _lblModifiedMemValue = CreateMetricBox(_cardMemory, "Páginas Modificadas", "0 MB", 476, 72, Color.FromArgb(251, 191, 36), null);
-            _lblPurgeCountValue = CreateMetricBox(_cardMemory, "Limpezas Realizadas", "0", 630, 72, Color.FromArgb(192, 132, 252), null);
+            _lblTotalMemValue = CreateMetricBox(_cardMemory, Localization.Get("MetricTotalMemory"), "0 MB", 14, 72, Color.FromArgb(148, 163, 184), out _lblTotalMemCap);
+            _lblStandbyMemValue = CreateMetricBox(_cardMemory, Localization.Get("MetricStandbyList"), "0 MB", 168, 72, Color.FromArgb(56, 189, 248), out _lblStandbyMemCap, out _lblStandbySubDetail);
+            _lblFreeMemValue = CreateMetricBox(_cardMemory, Localization.Get("MetricFreeMemory"), "0 MB", 322, 72, Color.FromArgb(74, 222, 128), out _lblFreeMemCap);
+            _lblModifiedMemValue = CreateMetricBox(_cardMemory, Localization.Get("MetricModifiedPages"), "0 MB", 476, 72, Color.FromArgb(251, 191, 36), out _lblModifiedMemCap);
+            _lblPurgeCountValue = CreateMetricBox(_cardMemory, Localization.Get("MetricPurgesCount"), "0", 630, 72, Color.FromArgb(192, 132, 252), out _lblPurgeCountCap);
 
-            _cardMemory.Controls.Add(lblMemTitle);
+            _cardMemory.Controls.Add(_lblMemTitle);
             _cardMemory.Controls.Add(_lblStatusBadge);
             _cardMemory.Controls.Add(_memoryBar);
 
@@ -239,30 +268,35 @@ namespace CustomISLC
             // PAINEL 2: REGRAS DE LIMPEZA AUTOMÁTICA
             // =====================================================================
             _cardConfig = CreateCard(16, 186, 385, 165);
-            _cardConfig.Controls.Add(CreateSectionTitle("REGRAS DE LIMPEZA AUTOMÁTICA", 14, 10));
+            _lblRulesTitle = CreateSectionTitle(Localization.Get("SectionRulesTitle"), 14, 10);
+            _cardConfig.Controls.Add(_lblRulesTitle);
 
-            _cardConfig.Controls.Add(CreateLabel("Standby List maior ou igual a:", 14, 40));
+            _lblStandbyLimit = CreateLabel(Localization.Get("StandbyLimitLabel"), 14, 40);
+            _cardConfig.Controls.Add(_lblStandbyLimit);
             _numStandbyLimit = CreateNumeric(235, 37, 95, 64, 131072, 1024);
             _cardConfig.Controls.Add(_numStandbyLimit);
             _cardConfig.Controls.Add(CreateLabel("MB", 335, 40));
 
-            _cardConfig.Controls.Add(CreateLabel("Condição lógica de disparo:", 14, 70));
+            _lblCondition = CreateLabel(Localization.Get("TriggerConditionLabel"), 14, 70);
+            _cardConfig.Controls.Add(_lblCondition);
             _cmbCondition = new ComboBox
             {
                 Location = new Point(235, 67),
                 Size = new Size(130, 24),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            _cmbCondition.Items.AddRange(new object[] { "E (Ambos)", "OU (Qualquer um)" });
+            _cmbCondition.Items.AddRange(new object[] { Localization.Get("ConditionAnd"), Localization.Get("ConditionOr") });
             _cmbCondition.SelectedIndex = 0;
             _cardConfig.Controls.Add(_cmbCondition);
 
-            _cardConfig.Controls.Add(CreateLabel("Memória Livre menor que:", 14, 100));
+            _lblFreeMemLimit = CreateLabel(Localization.Get("FreeMemoryLimitLabel"), 14, 100);
+            _cardConfig.Controls.Add(_lblFreeMemLimit);
             _numFreeMemLimit = CreateNumeric(235, 97, 95, 64, 131072, 8000);
             _cardConfig.Controls.Add(_numFreeMemLimit);
             _cardConfig.Controls.Add(CreateLabel("MB", 335, 100));
 
-            _cardConfig.Controls.Add(CreateLabel("Taxa de verificação (Polling):", 14, 130));
+            _lblPollingRate = CreateLabel(Localization.Get("PollingRateLabel"), 14, 130);
+            _cardConfig.Controls.Add(_lblPollingRate);
             _cmbPollingRate = new ComboBox
             {
                 Location = new Point(235, 127),
@@ -288,9 +322,11 @@ namespace CustomISLC
             // PAINEL 3: RESOLUÇÃO DO TIMER DO WINDOWS
             // =====================================================================
             _cardTimer = CreateCard(413, 186, 385, 165);
-            _cardTimer.Controls.Add(CreateSectionTitle("RESOLUÇÃO DO TIMER DO WINDOWS", 14, 10));
+            _lblTimerTitle = CreateSectionTitle(Localization.Get("SectionTimerTitle"), 14, 10);
+            _cardTimer.Controls.Add(_lblTimerTitle);
 
-            _cardTimer.Controls.Add(CreateLabel("Resolução Atual do Timer:", 14, 40));
+            _lblCurrentTimerCap = CreateLabel(Localization.Get("CurrentTimerLabel"), 14, 40);
+            _cardTimer.Controls.Add(_lblCurrentTimerCap);
             _lblCurrentTimerVal = new Label
             {
                 Text = "1.00 ms",
@@ -301,20 +337,22 @@ namespace CustomISLC
             };
             _cardTimer.Controls.Add(_lblCurrentTimerVal);
 
-            _cardTimer.Controls.Add(CreateLabel("Limites do Sistema (Min/Máx):", 14, 68));
+            _lblMinMaxTimerCap = CreateLabel(Localization.Get("SystemTimerLimitsLabel"), 14, 68);
+            _cardTimer.Controls.Add(_lblMinMaxTimerCap);
             _lblMinMaxTimerVal = CreateLabel("15.62 ms / 0.50 ms", 235, 68);
             _cardTimer.Controls.Add(_lblMinMaxTimerVal);
 
             _chkCustomTimer = new CheckBox
             {
-                Text = "Ativar Resolução de Timer Customizada",
+                Text = Localization.Get("EnableCustomTimer"),
                 AutoSize = true,
                 Location = new Point(14, 98)
             };
             _chkCustomTimer.CheckedChanged += OnCustomTimerChanged;
             _cardTimer.Controls.Add(_chkCustomTimer);
 
-            _cardTimer.Controls.Add(CreateLabel("Resolução Desejada (ms):", 14, 128));
+            _lblWantedTimerCap = CreateLabel(Localization.Get("DesiredResolutionLabel"), 14, 128);
+            _cardTimer.Controls.Add(_lblWantedTimerCap);
             _numWantedTimer = new NumericUpDown
             {
                 Location = new Point(235, 126),
@@ -329,18 +367,19 @@ namespace CustomISLC
             _cardTimer.Controls.Add(_numWantedTimer);
 
             // =====================================================================
-            // PAINEL 4 (NOVO): OTIMIZAÇÃO DE ENTREGA DE IMAGEM & FRAMETIME
+            // PAINEL 4: OTIMIZAÇÃO DE ENTREGA DE IMAGEM & FRAMETIME
             // =====================================================================
             _cardFrameOpt = CreateCard(16, 360, 782, 122);
-            _cardFrameOpt.Controls.Add(CreateSectionTitle("OTIMIZAÇÃO DE ENTREGA DE IMAGEM, FRAMETIME & PRIORIDADE DE GPU", 14, 10));
+            _lblFrameOptTitle = CreateSectionTitle(Localization.Get("SectionFrameOptTitle"), 14, 10);
+            _cardFrameOpt.Controls.Add(_lblFrameOptTitle);
 
-            _chkSmartLowPrioPurge = CreateCheckBox("Limpeza Standby Inteligente (Preserva cache de alta prioridade do jogo para evitar micro-stutter)", 14, 34);
-            _chkFlushModified = CreateCheckBox("Descarregar páginas modificadas antes de limpar (Flush Modified)", 14, 60);
+            _chkSmartLowPrioPurge = CreateCheckBox(Localization.Get("SmartLowPrioPurge"), 14, 34);
+            _chkFlushModified = CreateCheckBox(Localization.Get("FlushModified"), 14, 60);
 
-            _chkAutoBoostFg = CreateCheckBox("Auto-Boost Janela em Foco (CPU High + I/O + Sem Power Throttling):", 14, 86);
+            _chkAutoBoostFg = CreateCheckBox(Localization.Get("AutoBoostForeground"), 14, 86);
             _lblBoostedProcessVal = new Label
             {
-                Text = "Aguardando foco...",
+                Text = Localization.Get("BoostWaiting"),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(74, 222, 128),
                 AutoSize = true,
@@ -349,7 +388,7 @@ namespace CustomISLC
 
             _chkMmcssGpuTweaks = new CheckBox
             {
-                Text = "Otimizar Agendador GPU (MMCSS Priority 8 + Responsividade 100% + Anti-GameDVR)",
+                Text = Localization.Get("MmcssGpuTweaks"),
                 AutoSize = true,
                 Location = new Point(415, 34)
             };
@@ -362,7 +401,7 @@ namespace CustomISLC
 
             _chkUltimatePowerPlan = new CheckBox
             {
-                Text = "Forçar Energia Desempenho Máximo (Sem Core Parking)",
+                Text = Localization.Get("UltimatePowerPlan"),
                 AutoSize = true,
                 Location = new Point(415, 60)
             };
@@ -370,13 +409,13 @@ namespace CustomISLC
             {
                 if (_suppressEvents) return;
                 NativeMethods.SetHighPerformancePowerPlan(_chkUltimatePowerPlan.Checked);
-                _lblActivePowerPlanVal.Text = "Plano Ativo: " + NativeMethods.GetActivePowerPlanName();
+                _lblActivePowerPlanVal.Text = Localization.Get("ActivePlanPrefix") + NativeMethods.GetActivePowerPlanName();
                 SaveUIConfig();
             };
 
             _lblActivePowerPlanVal = new Label
             {
-                Text = "Plano Ativo: Verificando...",
+                Text = Localization.Get("ActivePlanChecking"),
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Italic),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 AutoSize = true,
@@ -394,14 +433,31 @@ namespace CustomISLC
             // PAINEL 5: OPÇÕES GERAIS & ATALHO GLOBAL
             // =====================================================================
             _cardOptions = CreateCard(16, 492, 385, 145);
-            _cardOptions.Controls.Add(CreateSectionTitle("OPÇÕES GERAIS & ATALHO GLOBAL", 14, 10));
+            _lblOptionsTitle = CreateSectionTitle(Localization.Get("SectionOptionsTitle"), 14, 10);
+            _cardOptions.Controls.Add(_lblOptionsTitle);
 
-            _chkStartMinimized = CreateCheckBox("Iniciar minimizado na bandeja", 14, 36);
-            _chkAutoStartMonitoring = CreateCheckBox("Auto-iniciar monitoramento", 205, 36);
-            _chkMinimizeOnClose = CreateCheckBox("Minimizar ao fechar (X)", 14, 62);
-            _chkAlwaysOnTop = CreateCheckBox("Sempre no topo", 205, 62);
-            _chkStartWithWindows = CreateCheckBox("Iniciar com o Windows (Admin)", 14, 88);
-            _chkDarkMode = CreateCheckBox("Modo Escuro", 235, 88);
+            _cmbLanguage = new ComboBox
+            {
+                Location = new Point(235, 6),
+                Size = new Size(135, 23),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Segoe UI", 8.25f, FontStyle.Regular)
+            };
+            _cmbLanguage.Items.AddRange(new object[]
+            {
+                "English",
+                "Português (Brasil)",
+                "Русский"
+            });
+            _cmbLanguage.SelectedIndexChanged += OnLanguageSelectedIndexChanged;
+            _cardOptions.Controls.Add(_cmbLanguage);
+
+            _chkStartMinimized = CreateCheckBox(Localization.Get("StartMinimized"), 14, 36);
+            _chkAutoStartMonitoring = CreateCheckBox(Localization.Get("AutoStartMonitoring"), 205, 36);
+            _chkMinimizeOnClose = CreateCheckBox(Localization.Get("MinimizeOnClose"), 14, 62);
+            _chkAlwaysOnTop = CreateCheckBox(Localization.Get("AlwaysOnTop"), 205, 62);
+            _chkStartWithWindows = CreateCheckBox(Localization.Get("StartWithWindows"), 14, 88);
+            _chkDarkMode = CreateCheckBox(Localization.Get("DarkMode"), 205, 88);
 
             _chkAlwaysOnTop.CheckedChanged += (s, e) => { if (!_suppressEvents) { TopMost = _chkAlwaysOnTop.Checked; SaveUIConfig(); } };
             _chkDarkMode.CheckedChanged += (s, e) => { if (!_suppressEvents) { ApplyTheme(_chkDarkMode.Checked); SaveUIConfig(); } };
@@ -409,7 +465,7 @@ namespace CustomISLC
 
             _chkHotkeyEnabled = new CheckBox
             {
-                Text = "Atalho Limpar:",
+                Text = Localization.Get("HotkeyLabel"),
                 AutoSize = true,
                 Location = new Point(14, 114)
             };
@@ -455,9 +511,10 @@ namespace CustomISLC
             // PAINEL 6: WORKING SET & LISTA DE EXCLUSÃO DE PROCESSOS
             // =====================================================================
             _cardExclusions = CreateCard(413, 492, 385, 145);
-            _cardExclusions.Controls.Add(CreateSectionTitle("WORKING SET & LISTA DE EXCLUSÃO", 14, 10));
+            _lblExclusionsTitle = CreateSectionTitle(Localization.Get("SectionWorkingSetTitle"), 14, 10);
+            _cardExclusions.Controls.Add(_lblExclusionsTitle);
 
-            _chkPurgeWorkingSetAuto = CreateCheckBox("Limpar Working Set de fundo junto com Standby (ignora jogo ativo)", 14, 34);
+            _chkPurgeWorkingSetAuto = CreateCheckBox(Localization.Get("PurgeWorkingSetAuto"), 14, 34);
             _cardExclusions.Controls.Add(_chkPurgeWorkingSetAuto);
 
             _lstExclusions = new ListBox
@@ -472,13 +529,13 @@ namespace CustomISLC
             {
                 Location = new Point(232, 60),
                 Size = new Size(138, 24),
-                Text = "nome_do_jogo"
+                Text = Localization.Get("ExclusionPlaceholder")
             };
             _cardExclusions.Controls.Add(_txtExclusionProc);
 
             _btnAddExclusion = new Button
             {
-                Text = "+ Ignorar Processo",
+                Text = Localization.Get("AddExclusion"),
                 Location = new Point(232, 86),
                 Size = new Size(138, 24),
                 FlatStyle = FlatStyle.Flat,
@@ -489,7 +546,7 @@ namespace CustomISLC
 
             _btnRemoveExclusion = new Button
             {
-                Text = "- Remover Selecionado",
+                Text = Localization.Get("RemoveExclusion"),
                 Location = new Point(232, 112),
                 Size = new Size(138, 24),
                 FlatStyle = FlatStyle.Flat,
@@ -503,7 +560,7 @@ namespace CustomISLC
             // =====================================================================
             _btnToggleMonitor = new Button
             {
-                Text = "▶ INICIAR MONITORAMENTO",
+                Text = Localization.Get("BtnStartMonitoring"),
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 Location = new Point(16, 648),
                 Size = new Size(270, 42),
@@ -518,7 +575,7 @@ namespace CustomISLC
 
             _btnPurgeStandbyNow = new Button
             {
-                Text = "⚡ LIMPAR STANDBY LIST AGORA",
+                Text = Localization.Get("BtnPurgeStandbyNow"),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Location = new Point(298, 648),
                 Size = new Size(255, 42),
@@ -529,7 +586,7 @@ namespace CustomISLC
 
             _btnPurgeWorkingSetNow = new Button
             {
-                Text = "🧹 LIMPAR WORKING SETS AGORA",
+                Text = Localization.Get("BtnPurgeWorkingSetNow"),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Location = new Point(565, 648),
                 Size = new Size(233, 42),
@@ -546,32 +603,32 @@ namespace CustomISLC
 
             // Configurar Tray Icon
             _trayMenu = new ContextMenuStrip();
-            ToolStripMenuItem itemOpen = new ToolStripMenuItem("Abrir Painel Custom ISLC Pro", null, (s, e) => RestoreFromTray());
-            itemOpen.Font = new Font(itemOpen.Font, FontStyle.Bold);
-            _trayItemToggle = new ToolStripMenuItem("Iniciar Monitoramento", null, (s, e) =>
+            _trayItemOpen = new ToolStripMenuItem(Localization.Get("TrayOpen"), null, (s, e) => RestoreFromTray());
+            _trayItemOpen.Font = new Font(_trayItemOpen.Font, FontStyle.Bold);
+            _trayItemToggle = new ToolStripMenuItem(Localization.Get("TrayStartMonitoring"), null, (s, e) =>
             {
                 if (_isMonitoring) StopMonitoring();
                 else StartMonitoring();
             });
-            ToolStripMenuItem itemPurgeStandby = new ToolStripMenuItem("Limpar Standby List Agora", null, (s, e) => ExecutePurge(true, false));
-            ToolStripMenuItem itemPurgeWS = new ToolStripMenuItem("Limpar Working Sets Agora", null, (s, e) => ExecutePurge(false, true));
-            ToolStripMenuItem itemExit = new ToolStripMenuItem("Sair", null, (s, e) => ExitApplication());
+            _trayItemPurgeStandby = new ToolStripMenuItem(Localization.Get("TrayPurgeStandbyNow"), null, (s, e) => ExecutePurge(true, false));
+            _trayItemPurgeWS = new ToolStripMenuItem(Localization.Get("TrayPurgeWorkingSetNow"), null, (s, e) => ExecutePurge(false, true));
+            _trayItemExit = new ToolStripMenuItem(Localization.Get("TrayExit"), null, (s, e) => ExitApplication());
 
             _trayMenu.Items.AddRange(new ToolStripItem[]
             {
-                itemOpen,
+                _trayItemOpen,
                 new ToolStripSeparator(),
                 _trayItemToggle,
-                itemPurgeStandby,
-                itemPurgeWS,
+                _trayItemPurgeStandby,
+                _trayItemPurgeWS,
                 new ToolStripSeparator(),
-                itemExit
+                _trayItemExit
             });
 
             _trayIcon = new NotifyIcon
             {
                 Icon = _appIcon,
-                Text = "Custom ISLC Pro - Otimizador de Memória & Frametime",
+                Text = "Custom ISLC Pro",
                 ContextMenuStrip = _trayMenu,
                 Visible = true
             };
@@ -604,6 +661,113 @@ namespace CustomISLC
                     CleanupResources();
                 }
             };
+        }
+
+        private void ApplyLocalization()
+        {
+            bool isAdmin = IsRunningAsAdmin();
+            Text = Localization.Get("AppTitle") + (isAdmin ? Localization.Get("AdminSuffix") : Localization.Get("NoAdminSuffix"));
+
+            // Panel 1
+            if (_lblMemTitle != null) _lblMemTitle.Text = Localization.Get("SectionMemoryTitle");
+            if (_lblStatusBadge != null)
+            {
+                _lblStatusBadge.Text = _isMonitoring ? Localization.Get("StatusRunning") : Localization.Get("StatusStopped");
+            }
+            if (_lblTotalMemCap != null) _lblTotalMemCap.Text = Localization.Get("MetricTotalMemory");
+            if (_lblStandbyMemCap != null) _lblStandbyMemCap.Text = Localization.Get("MetricStandbyList");
+            if (_lblFreeMemCap != null) _lblFreeMemCap.Text = Localization.Get("MetricFreeMemory");
+            if (_lblModifiedMemCap != null) _lblModifiedMemCap.Text = Localization.Get("MetricModifiedPages");
+            if (_lblPurgeCountCap != null) _lblPurgeCountCap.Text = Localization.Get("MetricPurgesCount");
+
+            // Panel 2
+            if (_lblRulesTitle != null) _lblRulesTitle.Text = Localization.Get("SectionRulesTitle");
+            if (_lblStandbyLimit != null) _lblStandbyLimit.Text = Localization.Get("StandbyLimitLabel");
+            if (_lblCondition != null) _lblCondition.Text = Localization.Get("TriggerConditionLabel");
+            if (_lblFreeMemLimit != null) _lblFreeMemLimit.Text = Localization.Get("FreeMemoryLimitLabel");
+            if (_lblPollingRate != null) _lblPollingRate.Text = Localization.Get("PollingRateLabel");
+            if (_cmbCondition != null)
+            {
+                int sel = _cmbCondition.SelectedIndex;
+                _cmbCondition.Items.Clear();
+                _cmbCondition.Items.AddRange(new object[] { Localization.Get("ConditionAnd"), Localization.Get("ConditionOr") });
+                _cmbCondition.SelectedIndex = (sel >= 0 && sel < 2) ? sel : 0;
+            }
+
+            // Panel 3
+            if (_lblTimerTitle != null) _lblTimerTitle.Text = Localization.Get("SectionTimerTitle");
+            if (_lblCurrentTimerCap != null) _lblCurrentTimerCap.Text = Localization.Get("CurrentTimerLabel");
+            if (_lblMinMaxTimerCap != null) _lblMinMaxTimerCap.Text = Localization.Get("SystemTimerLimitsLabel");
+            if (_chkCustomTimer != null) _chkCustomTimer.Text = Localization.Get("EnableCustomTimer");
+            if (_lblWantedTimerCap != null) _lblWantedTimerCap.Text = Localization.Get("DesiredResolutionLabel");
+
+            // Panel 4
+            if (_lblFrameOptTitle != null) _lblFrameOptTitle.Text = Localization.Get("SectionFrameOptTitle");
+            if (_chkSmartLowPrioPurge != null) _chkSmartLowPrioPurge.Text = Localization.Get("SmartLowPrioPurge");
+            if (_chkFlushModified != null) _chkFlushModified.Text = Localization.Get("FlushModified");
+            if (_chkAutoBoostFg != null) _chkAutoBoostFg.Text = Localization.Get("AutoBoostForeground");
+            if (_chkMmcssGpuTweaks != null) _chkMmcssGpuTweaks.Text = Localization.Get("MmcssGpuTweaks");
+            if (_chkUltimatePowerPlan != null) _chkUltimatePowerPlan.Text = Localization.Get("UltimatePowerPlan");
+            if (_lblActivePowerPlanVal != null)
+            {
+                _lblActivePowerPlanVal.Text = Localization.Get("ActivePlanPrefix") + NativeMethods.GetActivePowerPlanName();
+            }
+
+            // Panel 5
+            if (_lblOptionsTitle != null) _lblOptionsTitle.Text = Localization.Get("SectionOptionsTitle");
+            if (_chkStartMinimized != null) _chkStartMinimized.Text = Localization.Get("StartMinimized");
+            if (_chkAutoStartMonitoring != null) _chkAutoStartMonitoring.Text = Localization.Get("AutoStartMonitoring");
+            if (_chkMinimizeOnClose != null) _chkMinimizeOnClose.Text = Localization.Get("MinimizeOnClose");
+            if (_chkAlwaysOnTop != null) _chkAlwaysOnTop.Text = Localization.Get("AlwaysOnTop");
+            if (_chkStartWithWindows != null) _chkStartWithWindows.Text = Localization.Get("StartWithWindows");
+            if (_chkDarkMode != null) _chkDarkMode.Text = Localization.Get("DarkMode");
+            if (_chkHotkeyEnabled != null) _chkHotkeyEnabled.Text = Localization.Get("HotkeyLabel");
+
+            // Panel 6
+            if (_lblExclusionsTitle != null) _lblExclusionsTitle.Text = Localization.Get("SectionWorkingSetTitle");
+            if (_chkPurgeWorkingSetAuto != null) _chkPurgeWorkingSetAuto.Text = Localization.Get("PurgeWorkingSetAuto");
+            if (_btnAddExclusion != null) _btnAddExclusion.Text = Localization.Get("AddExclusion");
+            if (_btnRemoveExclusion != null) _btnRemoveExclusion.Text = Localization.Get("RemoveExclusion");
+
+            // Action buttons
+            if (_btnToggleMonitor != null)
+            {
+                _btnToggleMonitor.Text = _isMonitoring ? Localization.Get("BtnStopMonitoring") : Localization.Get("BtnStartMonitoring");
+            }
+            if (_btnPurgeStandbyNow != null) _btnPurgeStandbyNow.Text = Localization.Get("BtnPurgeStandbyNow");
+            if (_btnPurgeWorkingSetNow != null) _btnPurgeWorkingSetNow.Text = Localization.Get("BtnPurgeWorkingSetNow");
+
+            // Tray Menu
+            if (_trayItemOpen != null) _trayItemOpen.Text = Localization.Get("TrayOpen");
+            if (_trayItemToggle != null)
+            {
+                _trayItemToggle.Text = _isMonitoring ? Localization.Get("TrayStopMonitoring") : Localization.Get("TrayStartMonitoring");
+            }
+            if (_trayItemPurgeStandby != null) _trayItemPurgeStandby.Text = Localization.Get("TrayPurgeStandbyNow");
+            if (_trayItemPurgeWS != null) _trayItemPurgeWS.Text = Localization.Get("TrayPurgeWorkingSetNow");
+            if (_trayItemExit != null) _trayItemExit.Text = Localization.Get("TrayExit");
+
+            if (_memoryBar != null)
+            {
+                _memoryBar.LegendTemplate = Localization.Get("MemoryBarLegend");
+                _memoryBar.Invalidate();
+            }
+        }
+
+        private void OnLanguageSelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_suppressEvents) return;
+            string selectedLang = Localization.LANG_EN;
+            if (_cmbLanguage.SelectedIndex == 1)
+                selectedLang = Localization.LANG_PT_BR;
+            else if (_cmbLanguage.SelectedIndex == 2)
+                selectedLang = Localization.LANG_RU;
+
+            _config.Language = selectedLang;
+            Localization.SetLanguage(selectedLang);
+            ApplyLocalization();
+            UpdateMemoryStats(false);
+            SaveUIConfig();
         }
 
         private Panel CreateCard(int x, int y, int w, int h)
@@ -665,7 +829,7 @@ namespace CustomISLC
             return num;
         }
 
-        private Label CreateMetricBox(Panel parent, string caption, string initialValue, int x, int y, Color valueColor, out Label subDetailLabel)
+        private Label CreateMetricBox(Panel parent, string caption, string initialValue, int x, int y, Color valueColor, out Label capLabel, out Label subDetailLabel)
         {
             Panel box = new Panel
             {
@@ -674,7 +838,7 @@ namespace CustomISLC
                 Tag = "metricBox"
             };
 
-            Label lblCap = new Label
+            capLabel = new Label
             {
                 Text = caption,
                 Font = new Font("Segoe UI", 8f, FontStyle.Regular),
@@ -702,17 +866,17 @@ namespace CustomISLC
                 Tag = "metricCaption"
             };
 
-            box.Controls.Add(lblCap);
+            box.Controls.Add(capLabel);
             box.Controls.Add(lblVal);
             box.Controls.Add(subDetailLabel);
             parent.Controls.Add(box);
             return lblVal;
         }
 
-        private Label CreateMetricBox(Panel parent, string caption, string initialValue, int x, int y, Color valueColor, object unused)
+        private Label CreateMetricBox(Panel parent, string caption, string initialValue, int x, int y, Color valueColor, out Label capLabel)
         {
             Label dummy;
-            return CreateMetricBox(parent, caption, initialValue, x, y, valueColor, out dummy);
+            return CreateMetricBox(parent, caption, initialValue, x, y, valueColor, out capLabel, out dummy);
         }
 
         private void LoadConfigToUI()
@@ -720,6 +884,13 @@ namespace CustomISLC
             _suppressEvents = true;
             try
             {
+                if (string.Equals(_config.Language, Localization.LANG_PT_BR, StringComparison.OrdinalIgnoreCase))
+                    _cmbLanguage.SelectedIndex = 1;
+                else if (string.Equals(_config.Language, Localization.LANG_RU, StringComparison.OrdinalIgnoreCase))
+                    _cmbLanguage.SelectedIndex = 2;
+                else
+                    _cmbLanguage.SelectedIndex = 0;
+
                 int standbyVal;
                 if (int.TryParse(_config.StandbyListValue, out standbyVal))
                     _numStandbyLimit.Value = Math.Max(_numStandbyLimit.Minimum, Math.Min(_numStandbyLimit.Maximum, standbyVal));
@@ -783,6 +954,16 @@ namespace CustomISLC
         {
             if (_suppressEvents || _numStandbyLimit == null || _numFreeMemLimit == null) return;
 
+            if (_cmbLanguage != null)
+            {
+                if (_cmbLanguage.SelectedIndex == 1)
+                    _config.Language = Localization.LANG_PT_BR;
+                else if (_cmbLanguage.SelectedIndex == 2)
+                    _config.Language = Localization.LANG_RU;
+                else
+                    _config.Language = Localization.LANG_EN;
+            }
+
             _config.StandbyListValue = ((int)_numStandbyLimit.Value).ToString();
             _config.FreeMemoryValue = ((int)_numFreeMemLimit.Value).ToString();
             _config.TriggerConditionOr = (_cmbCondition.SelectedIndex == 1);
@@ -838,12 +1019,12 @@ namespace CustomISLC
             _numStandbyLimit.Enabled = false;
             _numFreeMemLimit.Enabled = false;
             _cmbCondition.Enabled = false;
-            _lblStatusBadge.Text = "● MONITORANDO ATIVO";
+            _lblStatusBadge.Text = Localization.Get("StatusRunning");
             _lblStatusBadge.ForeColor = Color.FromArgb(74, 222, 128);
-            _btnToggleMonitor.Text = "⏹ PARAR MONITORAMENTO";
+            _btnToggleMonitor.Text = Localization.Get("BtnStopMonitoring");
             _btnToggleMonitor.BackColor = Color.FromArgb(220, 38, 38);
             _btnToggleMonitor.ForeColor = Color.White;
-            _trayItemToggle.Text = "Parar Monitoramento";
+            _trayItemToggle.Text = Localization.Get("TrayStopMonitoring");
             _monitorTimer.Start();
             UpdateMemoryStats(true);
         }
@@ -854,14 +1035,14 @@ namespace CustomISLC
             _numStandbyLimit.Enabled = true;
             _numFreeMemLimit.Enabled = true;
             _cmbCondition.Enabled = true;
-            _lblStatusBadge.Text = "● MONITORAMENTO PARADO";
+            _lblStatusBadge.Text = Localization.Get("StatusStopped");
             _lblStatusBadge.ForeColor = Color.FromArgb(248, 113, 113);
-            _btnToggleMonitor.Text = "▶ INICIAR MONITORAMENTO";
+            _btnToggleMonitor.Text = Localization.Get("BtnStartMonitoring");
             _btnToggleMonitor.BackColor = Color.FromArgb(16, 185, 129);
             _btnToggleMonitor.ForeColor = Color.White;
-            _trayItemToggle.Text = "Iniciar Monitoramento";
+            _trayItemToggle.Text = Localization.Get("TrayStartMonitoring");
             NativeMethods.RestoreLastBoostedProcess();
-            _lblBoostedProcessVal.Text = "Parado";
+            _lblBoostedProcessVal.Text = Localization.Get("BoostStopped");
             _monitorTimer.Start();
         }
 
@@ -873,7 +1054,7 @@ namespace CustomISLC
             _lblStandbyMemValue.Text = string.Format("{0:N0} MB", snap.StandbyListMB);
             if (_lblStandbySubDetail != null)
             {
-                _lblStandbySubDetail.Text = string.Format("Frio: {0}M | Quente: {1}M", snap.LowPriorityStandbyMB, snap.HighPriorityStandbyMB);
+                _lblStandbySubDetail.Text = string.Format(Localization.Get("StandbySubDetail"), snap.LowPriorityStandbyMB, snap.HighPriorityStandbyMB);
             }
             _lblFreeMemValue.Text = string.Format("{0:N0} MB", snap.FreeMemoryMB);
             _lblModifiedMemValue.Text = string.Format("{0:N0} MB", snap.ModifiedMemoryMB);
@@ -888,11 +1069,16 @@ namespace CustomISLC
             if (_isMonitoring)
             {
                 string boosted = NativeMethods.UpdateForegroundProcessBoost(_chkAutoBoostFg.Checked);
-                _lblBoostedProcessVal.Text = boosted;
+                if (boosted == "Nenhum" || boosted == "Waiting for focus..." || string.IsNullOrEmpty(boosted))
+                    _lblBoostedProcessVal.Text = Localization.Get("BoostWaiting");
+                else if (boosted == "Desativado" || boosted == "Disabled")
+                    _lblBoostedProcessVal.Text = Localization.Get("BoostDisabled");
+                else
+                    _lblBoostedProcessVal.Text = boosted;
             }
 
-            string trayTooltip = string.Format("Custom ISLC Pro ({0})\nStandby: {1} MB | Livre: {2} MB\nLimpezas: {3}",
-                _isMonitoring ? "Ativo" : "Parado", snap.StandbyListMB, snap.FreeMemoryMB, _purgeCount);
+            string stateStr = _isMonitoring ? Localization.Get("TrayStateActive") : Localization.Get("TrayStateStopped");
+            string trayTooltip = string.Format(Localization.Get("TrayTooltip"), stateStr, snap.StandbyListMB, snap.FreeMemoryMB, _purgeCount);
             if (trayTooltip.Length > 63)
                 trayTooltip = trayTooltip.Substring(0, 63);
             _trayIcon.Text = trayTooltip;
@@ -903,7 +1089,6 @@ namespace CustomISLC
                 ulong freeLimit = (ulong)_numFreeMemLimit.Value;
                 bool useOr = (_cmbCondition.SelectedIndex == 1);
 
-                // Se limpeza inteligente de baixa prioridade estiver ativa, verifica se há pelo menos 64 MB de standby baixa prioridade
                 ulong effectiveStandby = _chkSmartLowPrioPurge.Checked ? snap.LowPriorityStandbyMB : snap.StandbyListMB;
 
                 bool shouldPurge = useOr
@@ -1197,10 +1382,12 @@ namespace CustomISLC
         private ulong _standby = 1024;
         private ulong _free = 11264;
         private bool _dark = true;
+        public string LegendTemplate { get; set; }
 
         public MemoryBarControl()
         {
             DoubleBuffered = true;
+            LegendTemplate = Localization.Get("MemoryBarLegend");
         }
 
         public void SetDarkMode(bool dark)
@@ -1248,7 +1435,8 @@ namespace CustomISLC
                     g.FillRectangle(freeBrush, usedW + standbyW, 0, freeW, h);
             }
 
-            string legend = string.Format("Em Uso: {0:N0} MB   |   Standby Cache: {1:N0} MB   |   Livre: {2:N0} MB", _used, _standby, _free);
+            string fmt = string.IsNullOrEmpty(LegendTemplate) ? Localization.Get("MemoryBarLegend") : LegendTemplate;
+            string legend = string.Format(fmt, _used, _standby, _free);
             using (Font f = new Font("Segoe UI", 8.5f, FontStyle.Bold))
             using (SolidBrush textShadow = new SolidBrush(Color.FromArgb(180, 0, 0, 0)))
             using (SolidBrush textBrush = new SolidBrush(Color.White))

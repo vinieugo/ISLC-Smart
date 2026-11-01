@@ -41,7 +41,9 @@ namespace CustomISLC
             {
                 if (!createdNew)
                 {
-                    MessageBox.Show("O Custom ISLC já está em execução (verifique a bandeja do sistema).",
+                    AppConfig cfg = AppConfig.Load();
+                    Localization.SetLanguage(cfg.Language);
+                    MessageBox.Show(Localization.Get("MsgAlreadyRunning"),
                         "Custom ISLC", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }

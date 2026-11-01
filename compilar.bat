@@ -13,7 +13,7 @@ echo Compilando CustomISLC.exe (64-bit)...
   /r:System.Windows.Forms.dll ^
   /r:System.Web.Extensions.dll ^
   /out:CustomISLC.exe ^
-  Program.cs NativeMethods.cs Config.cs MainForm.cs
+  Program.cs NativeMethods.cs Config.cs MainForm.cs Localization.cs
 
 if %ERRORLEVEL% EQU 0 (
     echo.

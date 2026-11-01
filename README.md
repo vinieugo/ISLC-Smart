@@ -46,7 +46,8 @@ A tabela abaixo detalha as principais diferenças arquiteturais e práticas entr
 | **Resolução de Timer do Windows** | Resolução fixa | ✅ Controle em tempo real da resolução do timer com suporte a **0.50 ms** e leitura direta via `NtQueryTimerResolution` / `NtSetTimerResolution`. |
 | **Interface Visual & Usabilidade** | Interface clássica WinForms cinza anos 90 | ✅ **Interface Dark Mode moderna**, barra gráfica segmentada em tempo real com distribuição de páginas (`MemoryBarControl`), badges coloridos e design limpo. |
 | **Atalho Global (Hotkey)** | ❌ Não possui | ✅ Tecla de atalho global configurável (ex: `Ctrl + Alt + P`) para forçar a limpeza instantânea sem precisar sair do jogo com Alt+Tab. |
-| **Linha de Comando & Automação** | Parâmetros básicos | ✅ Suporte completo a flags: `-purge`, `-runonce`, `-polling <ms>`, `-listsize <MB>`, `-freememory <MB>`, `-minimized`. |
+| **Suporte Multilíngue (i18n)** | Apenas inglês fixo | ✅ **Trilíngue nativo**: Suporte completo a **Inglês (Padrão)**, **Português (Brasil)** e **Russo (Русский)** com alternância dinâmica in-app e persistência no `config.json`. |
+| **Linha de Comando & Automação** | Parâmetros básicos | ✅ Suporte completo a flags: `-purge`, `-runonce`, `-polling <ms>`, `-listsize <MB>`, `-freememory <MB>`, `-lang <en|pt-BR|ru>`, `-minimized`. |
 | **Portabilidade** | Requer extração/instalador | ✅ Executável único compilado nativamente x64, standalone, sem dependências extras ou telemetria. |
 
 ---
@@ -105,7 +106,7 @@ CustomISLC.exe -runonce
 CustomISLC.exe -minimized
 
 # Inicia definindo limites personalizados via linha de comando:
-CustomISLC.exe -listsize 2048 -freememory 8192 -polling 500
+CustomISLC.exe -listsize 2048 -freememory 8192 -polling 500 -lang en
 ```
 
 ---
@@ -159,7 +160,8 @@ It leverages undocumented and low-level Windows NT kernel APIs (`ntdll.dll`, `ke
 | **Windows Timer Resolution** | Static resolution | ✅ Real-time sub-millisecond timer resolution down to **0.50 ms** queried and driven via `NtQueryTimerResolution` / `NtSetTimerResolution`. |
 | **User Interface & UX** | Traditional 90s-style gray WinForms | ✅ **Modern Dark Theme**, live segmented memory distribution graphic bar (`MemoryBarControl`), real-time metric cards, and clean typography. |
 | **Global Hotkey** | ❌ Not supported | ✅ User-definable global shortcut (e.g. `Ctrl + Alt + P`) to trigger instantaneous purging in-game without Alt-Tabbing. |
-| **Command Line / Automation** | Basic launch arguments | ✅ Rich CLI support: `-purge`, `-runonce`, `-polling <ms>`, `-listsize <MB>`, `-freememory <MB>`, `-minimized`. |
+| **Multi-Language Support (i18n)** | Hardcoded English only | ✅ **Native Trilingual Suite**: Full runtime localization in **English (Default)**, **Portuguese (Brazil)**, and **Russian (Русский)** with seamless on-the-fly UI switching and `config.json` persistence. |
+| **Command Line / Automation** | Basic launch arguments | ✅ Rich CLI support: `-purge`, `-runonce`, `-polling <ms>`, `-listsize <MB>`, `-freememory <MB>`, `-lang <en|pt-BR|ru>`, `-minimized`. |
 | **Portability & Footprint** | Installer / multi-file | ✅ Standalone x64 single binary, no bloat, no telemetry, zero unnecessary runtime dependencies. |
 
 ---
@@ -217,7 +219,7 @@ CustomISLC.exe -runonce
 CustomISLC.exe -minimized
 
 # Launch with custom thresholds:
-CustomISLC.exe -listsize 2048 -freememory 8192 -polling 500
+CustomISLC.exe -listsize 2048 -freememory 8192 -polling 500 -lang en
 ```
 
 ---

@@ -19,6 +19,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Config.cs" />
+    <Compile Include="Localization.cs" />
     <Compile Include="MainForm.cs" />
   </ItemGroup>
 </Project>

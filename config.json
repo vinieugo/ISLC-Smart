@@ -19,5 +19,6 @@
   "FlushModifiedBeforePurge": true,
   "AutoBoostForeground": true,
   "MmcssGpuOptimization": true,
-  "UltimatePowerPlan": true
+  "UltimatePowerPlan": true,
+  "Language": "en"
 }
