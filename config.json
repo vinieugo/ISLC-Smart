@@ -1,0 +1,23 @@
+{
+  "StandbyListValue": "1024",
+  "FreeMemoryValue": "8000",
+  "StartMinimized": true,
+  "AutoStartMonitoring": true,
+  "MinimizeOnClose": true,
+  "AlwaysOnTop": false,
+  "CustomTimer": true,
+  "WantedResolution": 0.5,
+  "PollingRateSTR": "1000",
+  "ExclusionList": [],
+  "DarkMode": true,
+  "HotkeyEnabled": false,
+  "HotkeyModifiers": 3,
+  "HotkeyVKey": 80,
+  "PurgeWorkingSetOnAuto": false,
+  "TriggerConditionOr": false,
+  "SmartLowPriorityPurge": true,
+  "FlushModifiedBeforePurge": true,
+  "AutoBoostForeground": true,
+  "MmcssGpuOptimization": true,
+  "UltimatePowerPlan": true
+}

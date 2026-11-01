@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 vinieugo
+Copyright (c) 2026 Custom ISLC Project & Contributors.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,12 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+### Attribution & Acknowledgments / Atribuição e Agradecimentos
+
+- **Intelligent Standby List Cleaner (ISLC)** original concept and inspiration by **Wagnardsoft** (https://www.wagnardsoft.com).
+- Custom ISLC Pro is an independent, community-developed, open-source enhancement suite built with low-level Windows NT kernel APIs, and is not officially affiliated with or endorsed by Wagnardsoft or Microsoft Corporation.
+- Windows® is a registered trademark of Microsoft Corporation in the United States and other countries.
+
